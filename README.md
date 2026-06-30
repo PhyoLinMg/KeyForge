@@ -81,6 +81,7 @@ Session          active admin JWT sessions (JTI-keyed, 2h TTL)
 | `VAULT_ROLE_ID` | prod | OpenBao AppRole role_id — entrypoint fetches `KEK_BASE64` |
 | `VAULT_SECRET_ID` | prod | OpenBao AppRole secret_id |
 | `VAULT_ADDR` | prod | OpenBao address (default `http://vault:8200`) |
+| `VAULT_UNSEAL_KEY` | prod | Unseal key from `bao operator init` — needed after every restart; store offline |
 | `KEK_BASE64` | dev only | 32-byte AES key — **use Vault in production** |
 | `TRUSTED_PROXY_HEADER` | prod | Header with real client IP (`x-real-ip` or `cf-connecting-ip`) |
 | `PROXY_UPSTREAM_URL` | optional | Enable proxy gate to a Handoff backend |
