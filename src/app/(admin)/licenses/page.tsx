@@ -7,17 +7,24 @@ import { statusClass, statusBorderClass, tierLabel } from './_lib/format'
 export default async function LicensesPage() {
   if (!(await isAuthenticated())) redirect('/login')
 
-  const licenses = await db.license.findMany({
-    orderBy: { issuedAt: 'desc' },
-    include: {
-      customer: { select: { name: true } },
-      product: { select: { name: true, slug: true } },
-      _count: { select: { instances: true } },
-    },
-  })
+  // List shows the newest 500; stats count everything in the DB
+  const [licenses, statusCounts] = await Promise.all([
+    db.license.findMany({
+      orderBy: { issuedAt: 'desc' },
+      take: 500,
+      include: {
+        customer: { select: { name: true } },
+        product: { select: { name: true, slug: true } },
+        _count: { select: { instances: true } },
+      },
+    }),
+    db.license.groupBy({ by: ['status'], _count: { _all: true } }),
+  ])
 
-  const active = licenses.filter(l => l.status === 'active').length
-  const revoked = licenses.filter(l => l.status === 'revoked').length
+  const countOf = (status: string) => statusCounts.find(s => s.status === status)?._count._all ?? 0
+  const total = statusCounts.reduce((sum, s) => sum + s._count._all, 0)
+  const active = countOf('active')
+  const revoked = countOf('revoked')
 
   return (
     <>
@@ -38,7 +45,7 @@ export default async function LicensesPage() {
 
         {/* Stats */}
         <div className="flex gap-8 py-[18px] bdb">
-          <Stat label="Total" value={licenses.length} />
+          <Stat label="Total" value={total} />
           <Stat label="Active" value={active} colorCls="fg-green" />
           <Stat label="Revoked" value={revoked} colorCls="fg-red" />
         </div>

@@ -21,14 +21,20 @@ export default async function AuditPage() {
     },
   })
 
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
-  const recent = events.filter(e => e.createdAt.getTime() > cutoff)
+  // Count the full 30-day window in the DB — the 500 rows above are only the display page
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const grouped = await db.auditEvent.groupBy({
+    by: ['type'],
+    where: { createdAt: { gt: cutoff } },
+    _count: { _all: true },
+  })
+  const countOf = (type: string) => grouped.find(g => g.type === type)?._count._all ?? 0
 
   const stats = {
-    total: recent.length,
-    issued: recent.filter(e => e.type === 'ISSUE').length,
-    revoked: recent.filter(e => e.type === 'REVOKE').length,
-    failures: recent.filter(e => e.type === 'HEARTBEAT_FAIL').length,
+    total: grouped.reduce((sum, g) => sum + g._count._all, 0),
+    issued: countOf('ISSUE'),
+    revoked: countOf('REVOKE'),
+    failures: countOf('HEARTBEAT_FAIL'),
   }
 
   const latestAt = events[0]?.createdAt.toISOString() ?? null
