@@ -204,25 +204,30 @@ async function verifyAndUpdateBound(opts: {
   })
   if (!instance) return hbError(500, 'instance_record_missing')
 
-  // Replay protection: sequence must be strictly increasing
-  if (BigInt(data.sequence) <= instance.latestSequence) {
-    return hbError(400, 'replay_rejected')
-  }
-
-  // Verify instance signature — hard-fail if key is missing on a bound instance
+  // Verify instance signature first — hard-fail if key is missing on a bound instance.
+  // Signature must be checked before the sequence: distinguishable replay_rejected /
+  // invalid_signature responses would let an unauthenticated caller binary-search
+  // the current sequence counter.
   if (!instance.publicKey) return hbError(500, 'instance_key_missing')
   const { signature: _sig, instance_public_key: _ipk, ...toSign } = body
   const payloadBytes = canonicalJson(toSign)
   const valid = verifyInstanceSignature(payloadBytes, data.signature, instance.publicKey)
   if (!valid) return hbError(401, 'invalid_signature')
 
+  // Replay protection: sequence must be strictly increasing
+  if (BigInt(data.sequence) <= instance.latestSequence) {
+    return hbError(400, 'replay_rejected')
+  }
+
   // Claim nonce after signature is verified — only authenticated requests consume a slot.
   if (!claimNonce('hb', `${data.license_id}:${data.nonce}`)) {
     return hbError(400, 'replay_rejected')
   }
 
-  await db.instance.update({
-    where: { id: instance.id },
+  // Guarded update: two concurrent heartbeats with the same sequence both pass the
+  // read-check above; only one may commit.
+  const updated = await db.instance.updateMany({
+    where: { id: instance.id, latestSequence: { lt: BigInt(data.sequence) } },
     data: {
       latestSequence: BigInt(data.sequence),
       lastSeenAt: new Date(),
@@ -230,6 +235,7 @@ async function verifyAndUpdateBound(opts: {
       lastUsage: (data.usage ?? null) as Prisma.InputJsonValue,
     },
   })
+  if (updated.count === 0) return hbError(400, 'replay_rejected')
 
   return null
 }

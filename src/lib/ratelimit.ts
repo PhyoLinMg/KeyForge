@@ -1,5 +1,5 @@
 /**
- * In-process sliding-window rate limiter.
+ * In-process fixed-window rate limiter.
  *
  * Works correctly for single-process deployments (docker compose, single Node
  * instance). For multi-process / horizontally-scaled deployments, enforce rate

@@ -64,6 +64,23 @@ describe('POST /api/admin/licenses/[id]/revoke', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 400 for malformed JSON body', async () => {
+    const { adminRequest } = await import('@/__tests__/helpers')
+    const req = await adminRequest(`http://localhost/api/admin/licenses/${licenseId}/revoke`, {
+      method: 'POST',
+      body: 'not json{',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const res = await POST(req, { params: Promise.resolve({ id: licenseId }) })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 when reason is not a string', async () => {
+    const req = await adminJsonPost(`http://localhost/api/admin/licenses/${licenseId}/revoke`, { reason: { nested: true } })
+    const res = await POST(req, { params: Promise.resolve({ id: licenseId }) })
+    expect(res.status).toBe(400)
+  })
+
   it('returns 404 for non-existent license', async () => {
     const fake = '00000000-0000-0000-0000-000000000000'
     const req = await adminJsonPost(`http://localhost/api/admin/licenses/${fake}/revoke`, { reason: 'gone' })

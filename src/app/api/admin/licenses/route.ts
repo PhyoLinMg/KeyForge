@@ -16,7 +16,7 @@ const IssueLicenseSchema = z.object({
   notBefore: z.coerce.date().optional(),
   expiresAt: z.coerce.date(),
   gracePeriodDays: z.number().int().min(0).max(365).optional(),
-  heartbeatUrl: z.string().url().max(2048).optional(),
+  heartbeatUrl: z.url().max(2048).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -104,42 +104,47 @@ export async function POST(req: NextRequest) {
     privateKeyEnc: product.privateKeyEnc,
   })
 
-  const license = await db.license.create({
-    data: {
-      id: licenseId,
-      customerId: customer.id,
-      productId: product.id,
-      keyId: product.keyId,
-      tier,
-      features,
-      limits,
-      notBefore: nbDate,
-      expiresAt: expDate,
-      gracePeriodDays,
-      heartbeatUrl: defaultHeartbeatUrl,
-      status: 'active',
-      payloadJson: payload as unknown as Prisma.InputJsonValue,
-      signature: text.split('.')[1],
-      licenseText: text,
-    },
-    include: {
-      customer: { select: { id: true, name: true } },
-      product: { select: { id: true, name: true, slug: true } },
-    },
-  })
-
-  await db.auditEvent.create({
-    data: {
-      licenseId: license.id,
-      type: 'ISSUE',
-      payload: {
+  // Transaction: a license row without its ISSUE audit event must not exist
+  const license = await db.$transaction(async (tx) => {
+    const created = await tx.license.create({
+      data: {
+        id: licenseId,
         customerId: customer.id,
-        customerName: customer.name,
         productId: product.id,
+        keyId: product.keyId,
         tier,
-        expiresAt: expDate.toISOString(),
+        features,
+        limits,
+        notBefore: nbDate,
+        expiresAt: expDate,
+        gracePeriodDays,
+        heartbeatUrl: defaultHeartbeatUrl,
+        status: 'active',
+        payloadJson: payload as unknown as Prisma.InputJsonValue,
+        signature: text.split('.')[1],
+        licenseText: text,
       },
-    },
+      include: {
+        customer: { select: { id: true, name: true } },
+        product: { select: { id: true, name: true, slug: true } },
+      },
+    })
+
+    await tx.auditEvent.create({
+      data: {
+        licenseId: created.id,
+        type: 'ISSUE',
+        payload: {
+          customerId: customer.id,
+          customerName: customer.name,
+          productId: product.id,
+          tier,
+          expiresAt: expDate.toISOString(),
+        },
+      },
+    })
+
+    return created
   })
 
   return Response.json(

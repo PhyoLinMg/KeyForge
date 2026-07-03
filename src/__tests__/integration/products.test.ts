@@ -59,6 +59,22 @@ describe('Admin products API', () => {
     expect(product.publicKeyB64).toBeTruthy()
   })
 
+  it('POST returns 409 for duplicate slug', async () => {
+    const make = async () => {
+      const req = await adminRequest('http://localhost/api/admin/products', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'Handoff', slug: 'handoff' }),
+        headers: { 'Content-Type': 'application/json' },
+      })
+      return POST(req)
+    }
+    expect((await make()).status).toBe(201)
+    const res = await make()
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body.error).toBe('slug_exists')
+  })
+
   it('POST returns 400 when name is missing', async () => {
     const req = await adminRequest('http://localhost/api/admin/products', {
       method: 'POST',

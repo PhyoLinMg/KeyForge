@@ -154,6 +154,30 @@ describe('POST /api/v1/heartbeat', () => {
     expect((await res.json()).error).toBe('replay_rejected')
   })
 
+  it('stale sequence with wrong signature returns 401, not replay_rejected (no sequence oracle)', async () => {
+    const firstBody = buildHeartbeatBody({
+      licenseId,
+      instanceId,
+      sequence: 5,
+      keypair,
+      isFirst: true,
+    })
+    await POST(heartbeatReq(firstBody))
+
+    // Unauthenticated probe: stale sequence + garbage signature.
+    // Must fail signature check, not reveal that the sequence is stale.
+    const probeBody = buildHeartbeatBody({
+      licenseId,
+      instanceId,
+      sequence: 3,
+      keypair,
+    })
+    probeBody.signature = 'AAAA'
+    const res = await POST(heartbeatReq(probeBody))
+    expect(res.status).toBe(401)
+    expect((await res.json()).error).toBe('invalid_signature')
+  })
+
   it('heartbeat with wrong signature returns 401', async () => {
     const firstBody = buildHeartbeatBody({
       licenseId,

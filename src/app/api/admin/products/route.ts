@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { generateProductKeypair } from '@/lib/crypto'
 import { requireAdminAuth } from '@/lib/auth'
@@ -53,25 +54,33 @@ export async function POST(req: NextRequest) {
 
   const keypair = generateProductKeypair()
 
-  const product = await db.product.create({
-    data: {
-      name,
-      slug,
-      keyId,
-      publicKeyB64: keypair.publicKeyB64,
-      privateKeyEnc: keypair.privateKeyEnc,
-      issuerName: issuerName ?? `${slug}-license-server`,
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      keyId: true,
-      publicKeyB64: true,
-      issuerName: true,
-      createdAt: true,
-    },
-  })
+  let product
+  try {
+    product = await db.product.create({
+      data: {
+        name,
+        slug,
+        keyId,
+        publicKeyB64: keypair.publicKeyB64,
+        privateKeyEnc: keypair.privateKeyEnc,
+        issuerName: issuerName ?? `${slug}-license-server`,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        keyId: true,
+        publicKeyB64: true,
+        issuerName: true,
+        createdAt: true,
+      },
+    })
+  } catch (e: unknown) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      return Response.json({ error: 'slug_exists' }, { status: 409 })
+    }
+    throw e
+  }
 
   await db.auditEvent.create({
     data: { type: 'PRODUCT_CREATE', payload: { productId: product.id, name, slug } },
