@@ -454,6 +454,7 @@ export function buildOpenApiDocument() {
             '201': { description: 'Product registered', content: { 'application/json': { schema: productItem } } },
             '400': json400,
             '401': json401,
+            '409': json409,
           },
         },
       },
@@ -468,7 +469,7 @@ export function buildOpenApiDocument() {
               'application/json': {
                 schema: {
                   type: 'object',
-                  properties: { days: { type: 'integer', minimum: 1, default: 90 } },
+                  properties: { days: { type: 'integer', minimum: 90, default: 90 } },
                 },
               },
             },
@@ -489,6 +490,7 @@ export function buildOpenApiDocument() {
                 },
               },
             },
+            '400': json400,
             '401': json401,
           },
         },
