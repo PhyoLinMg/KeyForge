@@ -16,11 +16,15 @@ ENV PORT=3001
 ENV HOSTNAME=0.0.0.0
 RUN apk add --no-cache openssl
 
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/package.json ./
+# Minimal traced server from Next standalone output (no devDependencies)
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Prisma CLI + engines + generated client for `migrate deploy` at container start
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/next.config.ts ./
 
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh

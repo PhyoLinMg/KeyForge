@@ -1,0 +1,19 @@
+# Secrets — never in image layers
+.env
+.env.*
+!.env.example
+cred.txt
+
+# Build artifacts and local state
+node_modules
+.next
+tsconfig.tsbuildinfo
+graphify-out
+
+# VCS / tooling
+.git
+.github
+.nvmrc
+Dockerfile
+docker-compose.yml
+.dockerignore
