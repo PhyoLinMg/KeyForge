@@ -53,11 +53,21 @@ export default function AuditLogTable({ events }: { events: AuditRow[] }) {
   }, [events, active, search])
 
   function toggleType(t: string) {
-    setActive(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n })
+    setActive(prev => {
+      const n = new Set(prev)
+      if (n.has(t)) n.delete(t)
+      else n.add(t)
+      return n
+    })
   }
 
   function toggleExp(id: string) {
-    setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    setExpanded(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) n.delete(id)
+      else n.add(id)
+      return n
+    })
   }
 
   return (

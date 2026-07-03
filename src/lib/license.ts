@@ -1,4 +1,4 @@
-import { buildLicenseText, canonicalJson } from './crypto'
+import { buildLicenseText } from './crypto'
 
 export interface LicensePayload {
   schema_version: number

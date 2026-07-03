@@ -92,7 +92,7 @@ export async function forward(req: NextRequest, path: string[]): Promise<NextRes
     method: req.method,
     headers: allowlistedRequestHeaders(req.headers),
     body: hasBody ? req.body : undefined,
-    // @ts-ignore — duplex required for streaming request bodies in Node 18+
+    // @ts-expect-error — duplex required for streaming request bodies in Node 18+
     duplex: 'half',
   })
   return new NextResponse(res.body, {

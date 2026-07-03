@@ -36,6 +36,8 @@ jobs:
 
       - run: npx tsc --noEmit
 
+      - run: npm run lint
+
       - run: npm run build
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/license_server

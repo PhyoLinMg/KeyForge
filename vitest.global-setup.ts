@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto'
 import bcrypt from 'bcryptjs'
 import { resolve } from 'path'
 
-export default async function () {
+export default async function globalSetup() {
   let stopContainer: (() => Promise<void>) | undefined
 
   if (!process.env.DATABASE_URL) {

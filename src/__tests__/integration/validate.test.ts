@@ -121,9 +121,8 @@ describe('POST /api/v1/validate', () => {
 
   it('unknown product slug returns 422 invalid_license', async () => {
     // Build a token whose payload has a different product_id
-    const { buildLicenseText, canonicalJson } = await import('@/lib/crypto')
+    const { buildLicenseText } = await import('@/lib/crypto')
     const { generateProductKeypair } = await import('@/lib/crypto')
-    const old_kek = process.env.KEK_BASE64
     const foreignKeypair = generateProductKeypair()
     const payload = {
       schema_version: 1,

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
-import { randomBytes, generateKeyPairSync } from 'crypto'
+import { randomBytes, generateKeyPairSync, createPrivateKey, sign } from 'crypto'
 import {
   encryptWithKek,
   decryptWithKek,
@@ -176,10 +176,8 @@ describe('verifyInstanceSignature', () => {
   })
 
   function signPayload(payload: object): string {
-    const { sign } = require('crypto')
     const bytes = canonicalJson(payload)
     const privDer = instancePrivateKey.export({ type: 'pkcs8', format: 'der' }) as Buffer
-    const { createPrivateKey } = require('crypto')
     const key = createPrivateKey({ key: privDer, format: 'der', type: 'pkcs8' })
     return sign(null, bytes, key).toString('base64url')
   }
@@ -198,7 +196,7 @@ describe('verifyInstanceSignature', () => {
   })
 
   it('rejects a signature from a different key', () => {
-    const { privateKey: otherPriv, publicKey: otherPub } = generateKeyPairSync('ed25519')
+    const { publicKey: otherPub } = generateKeyPairSync('ed25519')
     const otherPubB64 = (otherPub.export({ type: 'spki', format: 'der' }) as Buffer).toString('base64')
     const payload = { license_id: 'abc', sequence: 1 }
     const sig = signPayload(payload) // signed with original key
