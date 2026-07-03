@@ -213,6 +213,39 @@ describe('Admin licenses API', () => {
     expect(detail.auditEvents.length).toBeGreaterThanOrEqual(1)
   })
 
+  it('GET /[id] serializes a bound instance (BigInt latestSequence as string)', async () => {
+    const createReq = await adminRequest('http://localhost/api/admin/licenses', {
+      method: 'POST',
+      body: JSON.stringify({
+        productId,
+        customerId,
+        tier: 'pro',
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const createRes = await LIST_POST(createReq)
+    const { id } = await createRes.json()
+
+    const { db } = await import('@/lib/db')
+    await db.instance.create({
+      data: {
+        licenseId: id,
+        instanceUuid: crypto.randomUUID(),
+        publicKey: 'AAAA',
+        latestSequence: BigInt(42),
+      },
+    })
+
+    const detailReq = await adminRequest(`http://localhost/api/admin/licenses/${id}`)
+    const res = await DETAIL_GET(detailReq, { params: Promise.resolve({ id }) })
+    expect(res.status).toBe(200)
+
+    const detail = await res.json()
+    expect(detail.instances).toHaveLength(1)
+    expect(detail.instances[0].latestSequence).toBe('42')
+  })
+
   it('GET /[id] returns 404 for unknown id', async () => {
     const req = await adminRequest('http://localhost/api/admin/licenses/nonexistent')
     const res = await DETAIL_GET(req, { params: Promise.resolve({ id: 'nonexistent' }) })

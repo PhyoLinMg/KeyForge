@@ -21,5 +21,9 @@ export async function GET(
   })
 
   if (!license) return Response.json({ error: 'not found' }, { status: 404 })
-  return Response.json(license)
+  return Response.json({
+    ...license,
+    // BigInt is not JSON-serializable — expose as string (UI types expect string)
+    instances: license.instances.map((i) => ({ ...i, latestSequence: i.latestSequence.toString() })),
+  })
 }

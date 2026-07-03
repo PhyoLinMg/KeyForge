@@ -23,5 +23,10 @@ export default async function LicenseDetailPage({
 
   if (!license) notFound()
 
-  return <LicenseDetailClient license={JSON.parse(JSON.stringify(license))} />
+  // BigInt latestSequence is not JSON-serializable — stringify before the RSC boundary
+  const serializable = {
+    ...license,
+    instances: license.instances.map((i) => ({ ...i, latestSequence: i.latestSequence.toString() })),
+  }
+  return <LicenseDetailClient license={JSON.parse(JSON.stringify(serializable))} />
 }
